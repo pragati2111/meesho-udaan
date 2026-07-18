@@ -16,10 +16,13 @@ Output state fields written:
 import json
 import logging
 import time
+import traceback
 
 from app.agents.skill.prompt import SYSTEM_PROMPT, build_user_prompt
 from app.agents.skill.schemas import SkillProfile
 from app.services.llm import get_llm
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -152,13 +155,8 @@ def run(state: dict) -> dict:
         }
 
     except Exception as e:
-        duration_ms = int((time.time() - started_at) * 1000)
-
-        logger.error(
-            f"[{agent_id}] FAILED | "
-            f"error={str(e)} | "
-            f"duration={duration_ms}ms"
-        )
+        logger.exception(f"[{agent_id}] FAILED")
+        traceback.print_exc()
 
         return {
             "errors": {
