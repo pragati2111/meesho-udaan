@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { TrendingUp, Package, Tag, Palette, FileText, Rocket, Download, Share2, IndianRupee } from "lucide-react";
@@ -26,7 +26,7 @@ function SectionCard({ icon: Icon, title, children }: { icon: React.ElementType;
   );
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [blueprint, setBlueprint] = useState<any>(null);
@@ -287,5 +287,28 @@ export default function DashboardPage() {
         </div>
       </main>
     </>
+  );
+  
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <>
+          <Navbar />
+          <main className="min-h-screen pt-16 flex items-center justify-center">
+            <div className="text-center">
+              <LoadingSpinner size="lg" />
+              <p className="mt-4 text-muted-foreground">
+                Loading your blueprint...
+              </p>
+            </div>
+          </main>
+        </>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
   );
 }
