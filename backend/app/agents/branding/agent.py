@@ -9,6 +9,7 @@ import json
 import logging
 import time
 
+
 from app.agents.branding.prompt import SYSTEM_PROMPT, build_user_prompt
 from app.agents.branding.schemas import BrandIdentity
 from app.services.llm import get_llm
@@ -49,22 +50,26 @@ def run(state: dict) -> dict:
             },
         ]
 
+       
         response = llm.invoke(messages)
 
-        if hasattr(response, "text") and response.text:
-            raw_content = response.text
+# Gemini/OpenAI compatible response extraction
+        if isinstance(response.content, str):
+            raw_content = response.content
+
         elif isinstance(response.content, list):
             raw_content = ""
+
             for item in response.content:
                 if isinstance(item, dict):
                     raw_content += item.get("text", "")
                 else:
                     raw_content += str(item)
+
         else:
             raw_content = str(response.content)
 
         raw_content = raw_content.strip()
-
         if raw_content.startswith("```"):
             raw_content = raw_content.replace("```json", "")
             raw_content = raw_content.replace("```", "")

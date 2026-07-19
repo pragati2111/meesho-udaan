@@ -40,22 +40,31 @@ def run(state: dict) -> dict:
         llm = get_llm(temperature=0.2)
 
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": build_user_prompt(skill_profile)},
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT,
+            },
+            {
+                "role": "user",
+                "content": build_user_prompt(skill_profile),
+            },
         ]
 
         response = llm.invoke(messages)
 
-        # Gemini-compatible response extraction
-        if hasattr(response, "text") and response.text:
-            raw_content = response.text
+        # Gemini/OpenAI compatible response extraction
+        if isinstance(response.content, str):
+            raw_content = response.content
+
         elif isinstance(response.content, list):
             raw_content = ""
+
             for item in response.content:
                 if isinstance(item, dict):
                     raw_content += item.get("text", "")
                 else:
                     raw_content += str(item)
+
         else:
             raw_content = str(response.content)
 
@@ -67,9 +76,11 @@ def run(state: dict) -> dict:
             raw_content = raw_content.strip()
 
         parsed = json.loads(raw_content)
+
         market_intelligence = MarketIntelligence(**parsed)
 
         duration_ms = int((time.time() - started_at) * 1000)
+
         logger.info(
             f"[{agent_id}] COMPLETE | "
             f"session={session_id} | "
@@ -84,18 +95,36 @@ def run(state: dict) -> dict:
 
     except json.JSONDecodeError as e:
         duration_ms = int((time.time() - started_at) * 1000)
-        logger.error(f"[{agent_id}] JSON parse failed | {str(e)} | duration={duration_ms}ms")
+
+        logger.error(
+            f"[{agent_id}] JSON parse failed | "
+            f"{str(e)} | "
+            f"duration={duration_ms}ms"
+        )
+
         return {
-            "errors": {**state.get("errors", {}), agent_id: f"JSON parse error: {str(e)}"},
+            "errors": {
+                **state.get("errors", {}),
+                agent_id: f"JSON parse error: {str(e)}",
+            },
             "current_step": agent_id,
             "market_intelligence": _FALLBACK.model_dump(),
         }
 
     except Exception as e:
         duration_ms = int((time.time() - started_at) * 1000)
-        logger.error(f"[{agent_id}] FAILED | {str(e)} | duration={duration_ms}ms")
+
+        logger.error(
+            f"[{agent_id}] FAILED | "
+            f"{str(e)} | "
+            f"duration={duration_ms}ms"
+        )
+
         return {
-            "errors": {**state.get("errors", {}), agent_id: str(e)},
+            "errors": {
+                **state.get("errors", {}),
+                agent_id: str(e),
+            },
             "current_step": agent_id,
             "market_intelligence": _FALLBACK.model_dump(),
         }

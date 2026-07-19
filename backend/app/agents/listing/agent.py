@@ -18,7 +18,16 @@ logger = logging.getLogger(__name__)
 _FALLBACK = ListingContent(
     title="Handmade Indian Craft Product | Authentic Artisan Made | Premium Quality",
     description="Discover the beauty of authentic Indian craftsmanship.\n\n✅ Handmade by skilled artisans\n✅ Premium quality materials\n✅ Perfect for gifting and daily use\n✅ Unique — no two pieces identical",
-    keywords=["handmade", "indian craft", "artisan", "ethnic", "traditional", "handcrafted", "gift", "authentic"],
+    keywords=[
+        "handmade",
+        "indian craft",
+        "artisan",
+        "ethnic",
+        "traditional",
+        "handcrafted",
+        "gift",
+        "authentic",
+    ],
     hindi_title="हस्तनिर्मित भारतीय शिल्प उत्पाद | प्रामाणिक कारीगर निर्मित",
     hindi_description="भारतीय कारीगरी की खूबसूरती को अनुभव करें। हस्तनिर्मित और प्रीमियम गुणवत्ता।",
     category_path="Handicrafts > Handmade Products",
@@ -44,22 +53,28 @@ def run(state: dict) -> dict:
             {
                 "role": "user",
                 "content": build_user_prompt(
-                    business_strategy, brand_identity, pricing_strategy
+                    business_strategy,
+                    brand_identity,
+                    pricing_strategy,
                 ),
             },
         ]
 
         response = llm.invoke(messages)
 
-        if hasattr(response, "text") and response.text:
-            raw_content = response.text
+        # Gemini/OpenAI compatible response extraction
+        if isinstance(response.content, str):
+            raw_content = response.content
+
         elif isinstance(response.content, list):
             raw_content = ""
+
             for item in response.content:
                 if isinstance(item, dict):
                     raw_content += item.get("text", "")
                 else:
                     raw_content += str(item)
+
         else:
             raw_content = str(response.content)
 
@@ -74,6 +89,7 @@ def run(state: dict) -> dict:
         listing_content = ListingContent(**parsed)
 
         duration_ms = int((time.time() - started_at) * 1000)
+
         logger.info(
             f"[{agent_id}] COMPLETE | "
             f"session={session_id} | "
@@ -89,18 +105,36 @@ def run(state: dict) -> dict:
 
     except json.JSONDecodeError as e:
         duration_ms = int((time.time() - started_at) * 1000)
-        logger.error(f"[{agent_id}] JSON parse failed | {str(e)} | duration={duration_ms}ms")
+
+        logger.error(
+            f"[{agent_id}] JSON parse failed | "
+            f"{str(e)} | "
+            f"duration={duration_ms}ms"
+        )
+
         return {
-            "errors": {**state.get("errors", {}), agent_id: f"JSON parse error: {str(e)}"},
+            "errors": {
+                **state.get("errors", {}),
+                agent_id: f"JSON parse error: {str(e)}",
+            },
             "current_step": agent_id,
             "listing_content": _FALLBACK.model_dump(),
         }
 
     except Exception as e:
         duration_ms = int((time.time() - started_at) * 1000)
-        logger.error(f"[{agent_id}] FAILED | {str(e)} | duration={duration_ms}ms")
+
+        logger.error(
+            f"[{agent_id}] FAILED | "
+            f"{str(e)} | "
+            f"duration={duration_ms}ms"
+        )
+
         return {
-            "errors": {**state.get("errors", {}), agent_id: str(e)},
+            "errors": {
+                **state.get("errors", {}),
+                agent_id: str(e),
+            },
             "current_step": agent_id,
             "listing_content": _FALLBACK.model_dump(),
         }
