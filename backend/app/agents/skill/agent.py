@@ -81,12 +81,13 @@ def run(state: dict) -> dict:
         # ==========================================================
         # Gemini/OpenAI compatible response extraction
         # ==========================================================
-        if hasattr(response, "text") and response.text:
-            raw_content = response.text
+        # Extract Gemini response safely
+
+        if isinstance(response.content, str):
+            raw_content = response.content
 
         elif isinstance(response.content, list):
             raw_content = ""
-
             for item in response.content:
                 if isinstance(item, dict):
                     raw_content += item.get("text", "")
